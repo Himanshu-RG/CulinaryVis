@@ -1,9 +1,9 @@
 import * as functions from "firebase-functions";
 import axios from "axios";
+import {defineString} from "firebase-functions/params";
 
-// Get the Spoonacular API key from Firebase environment configuration
-// We will set this up in the Firebase console later, not in the code.
-const SPOONACULAR_API_KEY = functions.config().spoonacular.key;
+// Define the Spoonacular API key as a secret parameter
+const SPOONACULAR_API_KEY = defineString("SPOONACULAR_KEY");
 
 const SPOONACULAR_API_URL =
   "https://api.spoonacular.com/recipes/findByIngredients";
@@ -32,7 +32,7 @@ export const getRecipes = functions.https.onCall(async (data) => {
 
   // 3. Set up the parameters for the API call
   const apiParams = {
-    apiKey: SPOONACULAR_API_KEY,
+    apiKey: SPOONACULAR_API_KEY.value(), // Use .value() to access the key
     ingredients: ingredientsString,
     number: 5, // Let's ask for 5 recipes
     ranking: 1, // Maximize used ingredients

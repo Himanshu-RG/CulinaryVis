@@ -1,15 +1,23 @@
 import * as functions from "firebase-functions";
 import {GoogleGenerativeAI} from "@google/generative-ai";
+import {defineString} from "firebase-functions/params";
 
-// Get the Gemini API key from Firebase environment configuration
-// We will set this up in the Firebase console later.
-const GEMINI_API_KEY = functions.config().gemini.key;
+// Define the Gemini API key as a secret parameter
+const GEMINI_API_KEY = defineString("GEMINI_KEY");
 
 // Initialize the Gemini AI client
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash-preview-09-2025",
-});
+let genAI: GoogleGenerativeAI;
+let model: any;
+
+// Lazy initialization to only create clients when the function is cold-started
+const initializeGenAI = () => {
+  if (!genAI) {
+    genAI = new GoogleGenerativeAI(GEMINI_API_KEY.value());
+    model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash-preview-09-2025",
+    });
+  }
+};
 
 /**
  * A callable function that uses the Gemini AI to modify a recipe.
@@ -19,6 +27,8 @@ const model = genAI.getGenerativeModel({
  * @returns {Promise<{modifiedRecipe: string}>} The new, modified recipe text.
  */
 export const modifyRecipe = functions.https.onCall(async (data) => {
+  initializeGenAI(); // Ensure the client is initialized
+
   const {recipeText, request} = data;
 
   // 1. Validate the input
