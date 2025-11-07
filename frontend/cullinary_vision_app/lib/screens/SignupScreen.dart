@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -8,6 +9,8 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,6 +41,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: [
                     // Email Field
                     TextFormField(
+                      controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         labelText: 'Email',
@@ -51,6 +55,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     // Password Field
                     TextFormField(
+                      controller: _passwordController,
                       obscureText: true,
                       keyboardType: TextInputType.visiblePassword,
                       decoration: const InputDecoration(
@@ -79,9 +84,36 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     // Sign Up Button
                     ElevatedButton(
-                      onPressed: () {
-                        // TODO: Add signup logic here
-                        print("Sign Up button pressed!");
+                      onPressed: () async {
+                        try {
+                          // Show a loading circle (optional, but good)
+
+                          final String email = _emailController.text.trim();
+                          final String password = _passwordController.text
+                              .trim();
+
+                          // --- THIS IS THE FIREBASE CALL ---
+                          final UserCredential userCredential =
+                              await FirebaseAuth.instance
+                                  .createUserWithEmailAndPassword(
+                                    email: email,
+                                    password: password,
+                                  );
+                          // ---------------------------------
+
+                          print(
+                            "Successfully signed up: ${userCredential.user?.email}",
+                          );
+
+                          // If sign up is successful, go back to the login screen
+                          if (mounted) {
+                            Navigator.pop(context);
+                          }
+                        } on FirebaseAuthException catch (e) {
+                          // If there's an error (e.g., weak password, email already in use)
+                          print("Sign up failed: ${e.message}");
+                          // TODO: Show an error message (SnackBar) to the user
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
