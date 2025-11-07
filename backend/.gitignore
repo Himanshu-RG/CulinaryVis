@@ -70,4 +70,4 @@ node_modules/
 
 #API KEYS
 .env
-backend/functions/.env.culinaryvis-dev
+.env.culinaryvis-dev
