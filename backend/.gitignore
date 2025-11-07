@@ -69,4 +69,4 @@ node_modules/
 .dataconnect
 
 #API KEYS
-functions/.env
+.env
