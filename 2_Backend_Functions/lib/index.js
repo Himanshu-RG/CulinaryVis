@@ -33,8 +33,28 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.helloWorld = void 0;
+exports.modifyRecipe = exports.getRecipes = exports.scanIngredients = exports.helloWorld = void 0;
+// Import the Firebase Admin SDK
+const admin = __importStar(require("firebase-admin"));
+// Import Firebase Functions
 const functions = __importStar(require("firebase-functions"));
-exports.helloWorld = functions.https.onRequest((req, res) => {
-    res.send('Hello from CulinaryVision backend!');
+// Initialize the Firebase Admin SDK
+// This gives your functions access to Firebase services
+admin.initializeApp();
+/**
+ * A simple "Hello World" test function.
+ * You can call this from your browser to make sure deployment is working.
+ * To delete this later, just remove the 5 lines below.
+ */
+exports.helloWorld = functions.https.onRequest((request, response) => {
+    functions.logger.info("Hello logs!", { structuredData: true });
+    response.send("Hello from CulinaryVision Backend!");
 });
+// --- Your App's Functions Will Be Exported Below ---
+var scanIngredients_1 = require("./scanIngredients");
+Object.defineProperty(exports, "scanIngredients", { enumerable: true, get: function () { return scanIngredients_1.scanIngredients; } });
+var getRecipes_1 = require("./getRecipes"); // <-- THIS IS THE NEW LINE
+Object.defineProperty(exports, "getRecipes", { enumerable: true, get: function () { return getRecipes_1.getRecipes; } });
+var modifyRecipe_1 = require("./modifyRecipe");
+Object.defineProperty(exports, "modifyRecipe", { enumerable: true, get: function () { return modifyRecipe_1.modifyRecipe; } });
+//# sourceMappingURL=index.js.map
