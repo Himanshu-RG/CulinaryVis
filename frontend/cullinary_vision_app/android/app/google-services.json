@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "155159785649",
+    "project_id": "culinaryvis-dev",
+    "storage_bucket": "culinaryvis-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:155159785649:android:3bb6404d1d2e073058b290",
+        "android_client_info": {
+          "package_name": "com.example.cullinary_vision_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDk0QRPBMCRWVW5NNz9fEzGBRyGwu6y48g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

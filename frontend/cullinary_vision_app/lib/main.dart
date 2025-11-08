@@ -1,30 +1,31 @@
 import 'package:flutter/material.dart';
-// import './screens/SignupScreen.dart';
-import './screens/LoginScreen.dart';
-// import './screens/HomeScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
+// Make sure this import path matches exactly where you put your file
+import 'screens/LoginScreen.dart';
 
 void main() async {
+  // These two lines are required to use Firebase before the app starts
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
   runApp(const MyApp());
 }
 
-// 1. MyApp is now a StatelessWidget.
-// It only builds the MaterialApp *once*.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // Hides the debug banner
-      title: 'Login Screen',
+      debugShowCheckedModeBanner: false,
+      title: 'Culinary Vision', // Updated title
       theme: ThemeData(
-        primarySwatch: Colors.teal, // Sets the app's theme color
+        primarySwatch: Colors.teal,
+        // It's good practice to set a consistent visual density
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const LoginScreen(), // The home is now its own widget
+      // This sets the LoginScreen as the first screen of the app
+      home: const LoginScreen(),
     );
   }
 }

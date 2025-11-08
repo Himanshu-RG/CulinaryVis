@@ -1,5 +1,6 @@
-import 'LoginScreen.dart'; // Adjust path
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'LoginScreen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -9,18 +10,34 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  // This is a placeholder list.
-  // Later, we will get this from Firebase.
-  final List<String> _dislikes = ['Garlic', 'Ginger'];
+  // Placeholder for dislikes - will eventually come from Firestore
+  final List<String> _dislikes = [];
   final TextEditingController _dislikeController = TextEditingController();
 
+  @override
+  void dispose() {
+    _dislikeController.dispose();
+    super.dispose();
+  }
+
+  // Function to handle logging out
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
+
   void _addDislike() {
-    if (_dislikeController.text.isNotEmpty) {
+    if (_dislikeController.text.trim().isNotEmpty) {
       setState(() {
-        _dislikes.add(_dislikeController.text);
+        _dislikes.add(_dislikeController.text.trim());
         _dislikeController.clear();
       });
-      // TODO: Tell Person 2 to save this to Firebase
+      // TODO: Call backend function to save updated dislikes list to Firestore
     }
   }
 
@@ -28,11 +45,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     setState(() {
       _dislikes.remove(item);
     });
-    // TODO: Tell Person 2 to remove this from Firebase
+    // TODO: Call backend function to save updated dislikes list to Firestore
   }
 
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(title: const Text('My Profile')),
       body: Padding(
@@ -40,7 +58,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. USER EMAIL (Placeholder) ---
+            // --- 1. USER EMAIL SECTION ---
             const Text(
               'My Account',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -49,23 +67,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.email, color: Colors.teal),
-                title: const Text('user.email@gmail.com'), // Placeholder
-                subtitle: const Text('Logged In'),
+                // Display the real user email, or a fallback if somehow null
+                title: Text(user?.email ?? 'No email found'),
+                subtitle: const Text('Logged In via Firebase'),
               ),
             ),
             const SizedBox(height: 30),
 
-            // --- 2. MANAGE DISLIKES ---
+            // --- 2. MANAGE DISLIKES SECTION ---
             const Text(
-              'My Preferences',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              'My Preferences (Allergies / Dislikes)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _dislikeController,
               decoration: InputDecoration(
-                labelText: 'Add a dislike or allergy',
-                hintText: 'e.g., peanuts, cilantro',
+                labelText: 'Add item',
+                hintText: 'e.g., peanuts, shellfish',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.add),
@@ -75,41 +94,40 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
             const SizedBox(height: 10),
 
-            // This displays the list of dislikes
+            // List of dislikes
             Expanded(
-              child: ListView.builder(
-                itemCount: _dislikes.length,
-                itemBuilder: (context, index) {
-                  final item = _dislikes[index];
-                  return Card(
-                    child: ListTile(
-                      title: Text(item),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _removeDislike(item),
-                      ),
+              child: _dislikes.isEmpty
+                  ? const Center(child: Text('No preferences added yet.'))
+                  : ListView.builder(
+                      itemCount: _dislikes.length,
+                      itemBuilder: (context, index) {
+                        final item = _dislikes[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          child: ListTile(
+                            title: Text(item),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _removeDislike(item),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
 
             const SizedBox(height: 20),
 
             // --- 3. LOG OUT BUTTON ---
             ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
+              onPressed: _signOut, // Calls the _signOut function above
               icon: const Icon(Icons.logout),
               label: const Text('Log Out'),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
-                backgroundColor: Colors.red[400], // A different color
-                textStyle: const TextStyle(fontSize: 16),
+                backgroundColor: Colors.red[400],
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(fontSize: 18),
               ),
             ),
           ],
