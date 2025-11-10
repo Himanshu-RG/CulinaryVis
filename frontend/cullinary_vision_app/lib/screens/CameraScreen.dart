@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'package:http/http.dart' as http;
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -9,69 +12,125 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  // Controller for the camera
   CameraController? _controller;
-  // Future to initialize the controller
   Future<void>? _initializeControllerFuture;
-
   bool _isCameraInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the camera as soon as the widget is created
     _initializeCamera();
   }
 
   Future<void> _initializeCamera() async {
-    // 1. Get a list of available cameras
-    final cameras = await availableCameras();
-    // 2. Get the first camera from the list (usually the back camera)
-    final firstCamera = cameras.first;
+    try {
+      final cameras = await availableCameras();
+      final firstCamera = cameras.first;
 
-    // 3. Create a new CameraController
-    _controller = CameraController(
-      firstCamera,
-      ResolutionPreset.medium, // Use medium resolution
-    );
+      _controller = CameraController(firstCamera, ResolutionPreset.medium);
 
-    // 4. Initialize the controller
-    _initializeControllerFuture = _controller!.initialize();
+      _initializeControllerFuture = _controller!.initialize();
 
-    // 5. Set state to rebuild the UI once initialized
-    // We check if it's mounted to avoid errors if user backs out
-    if (mounted) {
-      setState(() {
-        _isCameraInitialized = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+        });
+      }
+    } catch (e) {
+      print('⚠️ Error initializing camera: $e');
     }
   }
 
   @override
   void dispose() {
-    // 6. Dispose of the controller when the widget is disposed
     _controller?.dispose();
     super.dispose();
   }
 
   Future<void> _takePicture() async {
-    // Wait until the controller is initialized
     await _initializeControllerFuture;
 
     try {
-      // 7. Take the picture and get the file path
+      // Capture the image
       final XFile image = await _controller!.takePicture();
+      print('📸 Picture saved to ${image.path}');
 
-      // TODO: Send this image (image.path) to Person 2's backend function
-      print('Picture saved to ${image.path}');
+      // Send image to Hugging Face API
+      await _sendImageToHuggingFace(image.path);
+    } catch (e) {
+      print('⚠️ Error taking picture: $e');
+    }
+  }
 
-      // Go back to the previous screen (HomeScreen)
-      if (mounted) {
-        Navigator.pop(context);
+  Future<void> _sendImageToHuggingFace(String imagePath) async {
+    try {
+      final bytes = await File(imagePath).readAsBytes();
+      final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+
+      final uri = Uri.parse('https://himanshuray-aiapp.hf.space/predict/');
+      // ✅ Your Hugging Face Space endpoint
+
+      final response = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "data": [base64Image],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final result = jsonDecode(response.body);
+        final detections = result["data"][0];
+
+        print('✅ Detections: $detections');
+        if (detections != null && detections.isNotEmpty) {
+          _showResultDialog(List<String>.from(detections));
+        } else {
+          _showResultDialog(["No objects detected"]);
+        }
+      } else {
+        print('❌ Failed with status: ${response.statusCode}');
+        _showResultDialog(["Error: Failed to get detections"]);
       }
     } catch (e) {
-      print(e);
+      print('⚠️ Error sending image: $e');
+      _showResultDialog(["Error: $e"]);
     }
+  }
+
+  void _showResultDialog(List<String> results) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Detected Objects'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: results
+              .map(
+                (r) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Chip(
+                    label: Text(
+                      r,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    backgroundColor: Colors.blueAccent,
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -81,24 +140,23 @@ class _CameraScreenState extends State<CameraScreen> {
       body: FutureBuilder<void>(
         future: _initializeControllerFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            // If the Future is complete, display the preview
+          if (snapshot.connectionState == ConnectionState.done &&
+              _isCameraInitialized) {
             return Stack(
               alignment: Alignment.bottomCenter,
               children: [
                 CameraPreview(_controller!),
-                // --- This is the "Take Picture" button ---
                 Padding(
                   padding: const EdgeInsets.all(32.0),
                   child: FloatingActionButton(
-                    onPressed: _takePicture, // Call the function
-                    child: const Icon(Icons.camera_alt),
+                    onPressed: _takePicture,
+                    backgroundColor: Colors.blueAccent,
+                    child: const Icon(Icons.camera_alt, color: Colors.white),
                   ),
                 ),
               ],
             );
           } else {
-            // Otherwise, display a loading indicator
             return const Center(child: CircularProgressIndicator());
           }
         },
